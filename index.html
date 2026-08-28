@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Restock">
+<meta name="theme-color" content="#1A1C1A">
+<title>Restock</title>
+<style>
+:root{
+  --bg:#1A1C1A; --card:#242624; --ink:#ECEEEA; --ink-soft:#98A099; --line:#34372F;
+  --walmart:#7FAAE0; --walmart-bg:rgba(127,170,224,0.15);
+  --sams:#5FC2A0; --sams-bg:rgba(95,194,160,0.15);
+  --amazon:#E0A25F; --amazon-bg:rgba(224,162,95,0.15);
+  --sage:#8ECB9E; --sage-bg:rgba(142,203,158,0.15);
+  --gold:#E0BC5F; --gold-bg:rgba(224,188,95,0.15);
+  --rust:#E0906B; --rust-bg:rgba(224,144,107,0.15);
+  --hygiene:#6BCAC7; --hygiene-bg:rgba(107,202,199,0.15);
+  --shower:#AA9BD2; --shower-bg:rgba(170,155,210,0.15);
+  --skin:#E0A1B1; --skin-bg:rgba(224,161,177,0.15);
+  --cleaning:#90AAC5; --cleaning-bg:rgba(144,170,197,0.15);
+  --laundry:#E0C15F; --laundry-bg:rgba(224,193,95,0.15);
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Avenir Next","Segoe UI",Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:900px;margin:0 auto;padding:20px 16px 100px;}
+header.top{display:flex;align-items:baseline;justify-content:space-between;border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:18px;}
+header.top h1{font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;font-style:italic;font-weight:600;font-size:34px;margin:0;letter-spacing:.5px;}
+header.top .tag{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-soft);}
+
+nav.bottombar{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  background:var(--card);border-top:1.5px solid var(--ink);
+  display:flex;justify-content:space-around;align-items:stretch;
+  padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+}
+nav.bottombar button{
+  flex:1;font-family:inherit;background:transparent;border:none;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;
+  color:var(--ink-soft);font-size:10.5px;letter-spacing:.5px;text-transform:uppercase;border-radius:6px;
+}
+nav.bottombar button .ico{font-size:19px;line-height:1;}
+nav.bottombar button.active{color:var(--ink);font-weight:700;background:var(--bg);}
+
+.section-title{font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;font-style:italic;font-size:22px;margin:0 0 4px;}
+.section-sub{font-size:12.5px;color:var(--ink-soft);margin:0 0 18px;letter-spacing:.3px;}
+.groupblock{margin-bottom:18px;border-radius:4px;overflow:hidden;border:1px solid var(--line);}
+.groupblock .sechead{padding:9px 14px;font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;font-style:italic;font-size:16px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:10px;}
+.addcatbtn{font-family:"Avenir Next","Segoe UI",Helvetica,Arial,sans-serif;font-style:normal;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;border:1px solid currentColor;background:transparent;color:inherit;padding:3px 10px;border-radius:20px;cursor:pointer;white-space:nowrap;}
+.itemrow{background:var(--card);border-top:1px solid var(--line);padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.groupblock .itemrow:first-of-type{border-top:none;}
+.itemname{min-width:170px;font-size:13.5px;font-weight:600;flex:1;}
+.nameedit{border:1px solid var(--line);border-radius:3px;padding:5px 7px;background:var(--bg);color:var(--ink);font-family:inherit;}
+.rmx{cursor:pointer;color:var(--ink-soft);font-weight:700;padding:0 4px;font-size:15px;}
+.rmx:hover{color:var(--rust);}
+.invhead{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap;}
+.editmodebtn{font-family:inherit;font-size:11px;text-transform:uppercase;letter-spacing:.5px;border:1.5px solid var(--ink);background:transparent;color:var(--ink);padding:7px 14px;border-radius:20px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.editmodebtn.on{background:var(--ink);color:var(--bg);}
+.addcatrow{background:var(--card);border-top:1px solid var(--line);padding:10px 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.addcatrow input{flex:1;min-width:160px;padding:7px 9px;border:1px solid var(--line);border-radius:3px;font-family:inherit;font-size:13px;background:var(--bg);color:var(--ink);}
+.addcatrow select{padding:7px 9px;border:1px solid var(--line);border-radius:3px;font-family:inherit;font-size:12.5px;background:var(--bg);color:var(--ink);}
+.addcatsave{font-family:inherit;border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);padding:7px 14px;border-radius:20px;cursor:pointer;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;}
+.addcatcancel{font-family:inherit;border:1px solid var(--line);background:transparent;color:var(--ink-soft);padding:7px 12px;border-radius:20px;cursor:pointer;font-size:11.5px;text-transform:uppercase;letter-spacing:.5px;}
+.storepill{font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:20px;font-weight:700;white-space:nowrap;}
+.statusbtns{display:flex;gap:5px;}
+.statusbtns button{font-family:inherit;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;border:1px solid var(--line);background:transparent;padding:4px 9px;border-radius:20px;cursor:pointer;color:var(--ink-soft);}
+.statusbtns button.have.on{background:var(--sage-bg);border-color:var(--sage);color:var(--sage);font-weight:700;}
+.statusbtns button.low.on{background:var(--gold-bg);border-color:var(--gold);color:var(--gold);font-weight:700;}
+.statusbtns button.need.on{background:var(--rust-bg);border-color:var(--rust);color:var(--rust);font-weight:700;}
+.pricefield{display:flex;align-items:center;gap:3px;font-size:12.5px;}
+.pricefield span{color:var(--ink-soft);}
+.pricefield input{width:64px;padding:5px 6px;border:1px solid var(--line);border-radius:3px;font-family:inherit;font-size:12.5px;background:var(--card);color:var(--ink);}
+.notefield input{width:110px;padding:5px 6px;border:1px solid var(--line);border-radius:3px;font-family:inherit;font-size:12px;background:var(--card);color:var(--ink-soft);}
+.notefield input::placeholder{color:var(--ink-soft);opacity:.6;}
+.linkfield{display:flex;align-items:center;gap:8px;}
+.linkfield input{width:150px;padding:5px 6px;border:1px solid var(--line);border-radius:3px;font-family:inherit;font-size:12px;background:var(--card);color:var(--ink-soft);}
+.linkfield input::placeholder{color:var(--ink-soft);opacity:.6;}
+.buybtn{font-family:inherit;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);padding:5px 11px;border-radius:20px;cursor:pointer;text-decoration:none;white-space:nowrap;}
+.editlink{cursor:pointer;color:var(--ink-soft);font-size:13px;padding:2px 4px;flex-shrink:0;}
+.editlink:hover{color:var(--ink);}
+.buyitbtn{font-family:inherit;font-size:10.5px;text-transform:uppercase;letter-spacing:.5px;border:1.5px solid var(--ink);background:var(--ink);color:var(--bg);padding:5px 11px;border-radius:20px;cursor:pointer;text-decoration:none;white-space:nowrap;}
+.buyitbtn.nolink{border-style:dashed;background:transparent;color:var(--ink-soft);cursor:default;}
+
+.shopgroup{background:var(--card);border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-bottom:14px;}
+.shopgroup .storehead{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;}
+.shopgroup .storehead h4{margin:0;font-family:"Iowan Old Style",Georgia,serif;font-style:italic;font-size:18px;}
+.shopgroup .subtotal{font-size:13px;font-weight:700;}
+.shopline{display:flex;justify-content:space-between;align-items:center;font-size:13px;padding:8px 16px;border-top:1px solid var(--line);}
+.shopline .sname{display:flex;align-items:center;gap:8px;}
+.badge-low{font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;background:var(--gold-bg);color:var(--gold);padding:2px 7px;border-radius:20px;font-weight:700;}
+.badge-need{font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;background:var(--rust-bg);color:var(--rust);padding:2px 7px;border-radius:20px;font-weight:700;}
+.noprice{color:var(--ink-soft);font-style:italic;font-size:12px;}
+.grandtotal{background:var(--ink);color:var(--bg);border-radius:4px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:700;margin-top:6px;}
+.empty{color:var(--ink-soft);font-size:13.5px;padding:30px;text-align:center;border:1px dashed var(--line);border-radius:4px;}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+const STORES = {
+  walmart:{label:"Walmart", color:"var(--walmart)", bg:"var(--walmart-bg)"},
+  sams:{label:"Sam's Club", color:"var(--sams)", bg:"var(--sams-bg)"},
+  amazon:{label:"Amazon", color:"var(--amazon)", bg:"var(--amazon-bg)"}
+};
+const CAT_COLORS = {
+  "Hygiene":{color:"var(--hygiene)", bg:"var(--hygiene-bg)"},
+  "Shower":{color:"var(--shower)", bg:"var(--shower-bg)"},
+  "Skin Care":{color:"var(--skin)", bg:"var(--skin-bg)"},
+  "Cleaning":{color:"var(--cleaning)", bg:"var(--cleaning-bg)"},
+  "Laundry":{color:"var(--laundry)", bg:"var(--laundry-bg)"}
+};
+const ITEMS = [
+  {id:"qtips",name:"Q-Tips",store:"sams",cat:"Hygiene"},
+  {id:"flosspicks",name:"Floss Picks",store:"sams",cat:"Hygiene"},
+  {id:"luminextoothpaste",name:"Luminex Toothpaste",store:"walmart",cat:"Hygiene"},
+  {id:"toothbrushes",name:"Toothbrushes",store:"walmart",cat:"Hygiene"},
+  {id:"everydaypads",name:"Everyday Pads",store:"sams",cat:"Hygiene"},
+  {id:"tampons",name:"Tampons",store:"walmart",cat:"Hygiene"},
+  {id:"mouthwash",name:"Mouthwash",store:"walmart",cat:"Hygiene"},
+
+  {id:"sheaconditioner",name:"SheaMoisture Conditioner",store:"walmart",cat:"Shower"},
+  {id:"sheashampoo",name:"SheaMoisture Shampoo",store:"walmart",cat:"Shower"},
+  {id:"harryrazorheads",name:"Harry's Razor Heads",store:"walmart",cat:"Shower"},
+  {id:"vanicreamfacewash",name:"Vanicream Facewash",store:"walmart",cat:"Shower"},
+  {id:"dovebodywash",name:"Dove Bodywash",store:"sams",cat:"Shower"},
+  {id:"grapeseedoil",name:"Grapeseed Oil",store:"amazon",cat:"Shower"},
+
+  {id:"vanicream",name:"Vanicream",store:"walmart",cat:"Skin Care"},
+  {id:"vaseline",name:"Vaseline",store:"sams",cat:"Skin Care"},
+
+  {id:"handsoap",name:"Hand Soap",store:"amazon",cat:"Cleaning"},
+  {id:"showercleaner",name:"Shower Cleaner",store:"walmart",cat:"Cleaning"},
+  {id:"toiletbowlcleaner",name:"Toilet Bowl Cleaner",store:"walmart",cat:"Cleaning"},
+  {id:"meyersconcentrate",name:"Mrs. Meyer's Concentrate (mop/spray)",store:"amazon",cat:"Cleaning"},
+  {id:"papertowels",name:"Paper Towels",store:"sams",cat:"Cleaning"},
+  {id:"toiletpaper",name:"Toilet Paper",store:"sams",cat:"Cleaning"},
+  {id:"disposablegloves",name:"Cooking Disposable Gloves",store:"sams",cat:"Cleaning"},
+
+  {id:"gaindetergent",name:"Gain Laundry Detergent",store:"sams",cat:"Laundry"},
+  {id:"gainsoftener",name:"Gain Laundry Softener",store:"sams",cat:"Laundry"},
+  {id:"oxiclean",name:"OxiClean",store:"walmart",cat:"Laundry"}
+];
+const CAT_ORDER = ["Hygiene","Shower","Skin Care","Cleaning","Laundry"];
+const TABS = [
+  {id:"inventory", label:"Inventory", ico:"🧴"},
+  {id:"shopping", label:"Shopping", ico:"🛒"}
+];
+
+let state = { tab:"inventory", status:{}, price:{}, notes:{}, links:{}, editingLink:{}, customItems:[], nameOverrides:{}, editMode:false, addingTo:null };
+
+function loadState(){
+  const keys = {"restock-status":"status","restock-price":"price","restock-notes":"notes","restock-links":"links","restock-custom-items":"customItems","restock-name-overrides":"nameOverrides"};
+  for(const k in keys){
+    try{ const raw = localStorage.getItem(k); if(raw) state[keys[k]] = JSON.parse(raw); }catch(e){}
+  }
+  render();
+}
+function saveState(key,val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+
+function allItems(){ return ITEMS.concat(state.customItems); }
+function itemsForCat(cat){ return allItems().filter(i=>i.cat===cat); }
+
+function render(){
+  const app = document.getElementById("app");
+  app.innerHTML = `
+    <header class="top">
+      <h1>Restock</h1>
+      <div class="tag">household &amp; hygiene, tracked by store</div>
+    </header>
+    <div id="tabcontent"></div>
+    <nav class="bottombar">
+      ${TABS.map(t=>`<button data-tab="${t.id}" class="${state.tab===t.id?"active":""}"><span class="ico">${t.ico}</span>${t.label}</button>`).join("")}
+    </nav>
+  `;
+  app.querySelectorAll("nav.bottombar button").forEach(b=>{ b.onclick=()=>{ state.tab=b.dataset.tab; window.scrollTo(0,0); render(); }; });
+  const c = document.getElementById("tabcontent");
+  if(state.tab==="inventory") c.innerHTML = renderInventory();
+  if(state.tab==="shopping") c.innerHTML = renderShopping();
+  wireEvents();
+}
+
+function renderInventory(){
+  return `
+    <div class="invhead">
+      <div>
+        <p class="section-title">Inventory</p>
+        <p class="section-sub">Mark Have / Low / Need, and fill in the price you actually pay so the shopping list can total your trip. Use the note field for pack size on bulk items (e.g. "36ct", "128oz").</p>
+      </div>
+      <button class="editmodebtn ${state.editMode?"on":""}" id="toggleeditmode">${state.editMode? "Done Editing" : "Edit Items"}</button>
+    </div>
+    ${CAT_ORDER.map(cat=>{
+      const statusOrder = {need:0, low:1, have:2};
+      const items = itemsForCat(cat).slice().sort((a,b)=>{
+        const as = state.status[a.id] || "need";
+        const bs = state.status[b.id] || "need";
+        return statusOrder[as] - statusOrder[bs];
+      });
+      const col = CAT_COLORS[cat];
+      const isAdding = state.addingTo === cat;
+      return `<div class="groupblock">
+        <div class="sechead" style="background:${col.bg};color:${col.color}">
+          <span>${cat}</span>
+          <button class="addcatbtn" data-addcat="${cat}">+ Add</button>
+        </div>
+        ${items.map(itemRow).join("")}
+        ${isAdding? addItemRow(cat) : ""}
+      </div>`;
+    }).join("")}
+  `;
+}
+function addItemRow(cat){
+  return `
+  <div class="addcatrow">
+    <input type="text" id="newitemname" placeholder="Item name (e.g. brand + product)">
+    <select id="newitemstore">
+      ${Object.entries(STORES).map(([k,v])=>`<option value="${k}">${v.label}</option>`).join("")}
+    </select>
+    <button class="addcatsave" data-savenew="${cat}">Add</button>
+    <button class="addcatcancel" data-canceladd="1">Cancel</button>
+  </div>`;
+}
+function itemRow(item){
+  const store = STORES[item.store];
+  const st = state.status[item.id] || "need";
+  const price = state.price[item.id] || "";
+  const note = state.notes[item.id] || "";
+  const link = state.links[item.id] || "";
+  const editing = !!state.editingLink[item.id];
+  const showInput = !link || editing;
+  const name = state.nameOverrides[item.id] || item.name;
+  const isCustom = item.id.indexOf("custom-")===0;
+  const nameCell = state.editMode
+    ? `<input type="text" class="itemname nameedit" data-rename="${item.id}" value="${name}">`
+    : `<span class="itemname">${name}</span>`;
+  return `
+  <div class="itemrow">
+    ${nameCell}
+    <span class="storepill" style="background:${store.bg};color:${store.color}">${store.label}</span>
+    <div class="statusbtns" data-item="${item.id}">
+      <button class="have ${st==="have"?"on":""}" data-status="have">Have</button>
+      <button class="low ${st==="low"?"on":""}" data-status="low">Low</button>
+      <button class="need ${st==="need"?"on":""}" data-status="need">Need</button>
+    </div>
+    <div class="pricefield"><span>$</span><input type="text" inputmode="decimal" placeholder="0.00" data-price="${item.id}" value="${price}"></div>
+    <div class="notefield"><input type="text" placeholder="pack size / notes" data-note="${item.id}" value="${note}"></div>
+    <div class="linkfield">
+      ${showInput
+        ? `<input type="url" placeholder="paste product link..." data-link="${item.id}" value="${link}">`
+        : `<a class="buybtn" href="${link}" target="_blank" rel="noopener">Buy Me &#8599;</a><span class="editlink" data-editlink="${item.id}" title="Change link">&#9998;</span>`
+      }
+    </div>
+    ${(state.editMode && isCustom)? `<span class="rmx" data-rmitem="${item.id}" title="Remove item">&times;</span>` : ""}
+  </div>`;
+}
+
+function renderShopping(){
+  const needed = allItems().filter(i=> (state.status[i.id]||"need") !== "have");
+  if(needed.length===0){
+    return `
+      <p class="section-title">Shopping List</p>
+      <p class="section-sub">Everything you've marked Low or Need shows up here, grouped by store.</p>
+      <div class="empty">Nothing needed right now &mdash; everything's marked Have in your Inventory.</div>
+    `;
+  }
+  let grandTotal = 0, grandHasPrice = false;
+  const storeKeys = Object.keys(STORES);
+  const blocks = storeKeys.map(sk=>{
+    const items = needed.filter(i=>i.store===sk);
+    if(items.length===0) return "";
+    let subtotal = 0, anyPrice = false;
+    const lines = items.map(i=>{
+      const st = state.status[i.id] || "need";
+      const price = parseFloat(state.price[i.id]);
+      const note = state.notes[i.id] || "";
+      const link = state.links[i.id] || "";
+      if(!isNaN(price)){ subtotal += price; anyPrice = true; }
+      const iname = state.nameOverrides[i.id] || i.name;
+      return `<div class="shopline">
+        <span class="sname">${iname}${note?` <span class="noprice">&middot; ${note}</span>`:""} <span class="${st==='low'?'badge-low':'badge-need'}">${st}</span></span>
+        <span style="display:flex;align-items:center;gap:10px;">
+          <span>${!isNaN(price)? "$"+price.toFixed(2) : '<span class="noprice">no price set</span>'}</span>
+          ${link? `<a class="buyitbtn" href="${link}" target="_blank" rel="noopener">I need it &rarr;</a>` : `<span class="buyitbtn nolink" title="Add a link in Inventory">no link</span>`}
+        </span>
+      </div>`;
+    }).join("");
+    grandTotal += subtotal; if(anyPrice) grandHasPrice = true;
+    return `<div class="shopgroup">
+      <div class="storehead" style="background:${STORES[sk].bg}">
+        <h4 style="color:${STORES[sk].color}">${STORES[sk].label}</h4>
+        <span class="subtotal" style="color:${STORES[sk].color}">${anyPrice? "$"+subtotal.toFixed(2) : "&mdash;"}</span>
+      </div>
+      ${lines}
+    </div>`;
+  }).join("");
+  return `
+    <p class="section-title">Shopping List</p>
+    <p class="section-sub">Grouped by where you buy it, with a running total from the prices you've entered.</p>
+    ${blocks}
+    <div class="grandtotal"><span>Estimated total</span><span>${grandHasPrice? "$"+grandTotal.toFixed(2) : "add prices in Inventory to total"}</span></div>
+  `;
+}
+
+function wireEvents(){
+  const c = document.getElementById("tabcontent");
+  c.querySelectorAll(".statusbtns").forEach(group=>{
+    const item = group.dataset.item;
+    group.querySelectorAll("button").forEach(btn=>{
+      btn.onclick = ()=>{
+        state.status[item] = btn.dataset.status;
+        saveState("restock-status", state.status);
+        render();
+      };
+    });
+  });
+  c.querySelectorAll("[data-price]").forEach(inp=>{
+    inp.onchange = ()=>{ state.price[inp.dataset.price] = inp.value.trim(); saveState("restock-price", state.price); };
+  });
+  c.querySelectorAll("[data-note]").forEach(inp=>{
+    inp.onchange = ()=>{ state.notes[inp.dataset.note] = inp.value.trim(); saveState("restock-notes", state.notes); };
+  });
+  c.querySelectorAll("[data-link]").forEach(inp=>{
+    inp.onchange = ()=>{
+      state.links[inp.dataset.link] = inp.value.trim();
+      state.editingLink[inp.dataset.link] = false;
+      saveState("restock-links", state.links);
+      render();
+    };
+  });
+  c.querySelectorAll("[data-editlink]").forEach(el=>{
+    el.onclick = ()=>{
+      state.editingLink[el.dataset.editlink] = true;
+      render();
+    };
+  });
+
+  const editBtn = document.getElementById("toggleeditmode");
+  if(editBtn){
+    editBtn.onclick = ()=>{ state.editMode = !state.editMode; state.addingTo = null; render(); };
+  }
+  c.querySelectorAll("[data-addcat]").forEach(b=>{
+    b.onclick = ()=>{
+      state.addingTo = (state.addingTo === b.dataset.addcat) ? null : b.dataset.addcat;
+      render();
+    };
+  });
+  c.querySelectorAll("[data-canceladd]").forEach(b=>{
+    b.onclick = ()=>{ state.addingTo = null; render(); };
+  });
+  c.querySelectorAll("[data-savenew]").forEach(b=>{
+    b.onclick = ()=>{
+      const cat = b.dataset.savenew;
+      const nameInput = document.getElementById("newitemname");
+      const storeSelect = document.getElementById("newitemstore");
+      const name = nameInput.value.trim();
+      if(!name) return;
+      const id = "custom-" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
+      state.customItems.push({id, name, store: storeSelect.value, cat});
+      saveState("restock-custom-items", state.customItems);
+      state.addingTo = null;
+      render();
+    };
+  });
+  c.querySelectorAll("[data-rename]").forEach(inp=>{
+    inp.onchange = ()=>{
+      const id = inp.dataset.rename;
+      const val = inp.value.trim();
+      if(val) state.nameOverrides[id] = val; else delete state.nameOverrides[id];
+      saveState("restock-name-overrides", state.nameOverrides);
+      render();
+    };
+  });
+  c.querySelectorAll("[data-rmitem]").forEach(el=>{
+    el.onclick = ()=>{
+      const id = el.dataset.rmitem;
+      state.customItems = state.customItems.filter(i=>i.id!==id);
+      delete state.nameOverrides[id];
+      delete state.status[id]; delete state.price[id]; delete state.notes[id]; delete state.links[id]; delete state.editingLink[id];
+      saveState("restock-custom-items", state.customItems);
+      saveState("restock-name-overrides", state.nameOverrides);
+      saveState("restock-status", state.status);
+      saveState("restock-price", state.price);
+      saveState("restock-notes", state.notes);
+      saveState("restock-links", state.links);
+      render();
+    };
+  });
+}
+
+loadState();
+</script>
+</body>
+</html>
