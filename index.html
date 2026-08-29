@@ -94,11 +94,51 @@ nav.bottombar button.active{color:var(--ink);font-weight:700;background:var(--bg
 .noprice{color:var(--ink-soft);font-style:italic;font-size:12px;}
 .grandtotal{background:var(--ink);color:var(--bg);border-radius:4px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:700;margin-top:6px;}
 .empty{color:var(--ink-soft);font-size:13.5px;padding:30px;text-align:center;border:1px dashed var(--line);border-radius:4px;}
+
+.authwrap{max-width:380px;margin:80px auto;padding:0 16px;}
+.authbox{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:24px;}
+.authbox h2{font-family:"Iowan Old Style","Palatino Linotype",Georgia,serif;font-style:italic;margin:0 0 4px;font-size:24px;}
+.authbox p{color:var(--ink-soft);font-size:12.5px;margin:0 0 18px;}
+.authbox input{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink);font-family:inherit;font-size:14px;margin-bottom:10px;box-sizing:border-box;}
+.authbtns{display:flex;gap:8px;margin-top:6px;}
+.authbtns button{flex:1;font-family:inherit;border:1.5px solid var(--ink);padding:10px;border-radius:20px;cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:.5px;}
+.authbtns .primarybtn{background:var(--ink);color:var(--bg);}
+.authbtns .secondarybtn{background:transparent;color:var(--ink);}
+.autherr{color:var(--rust);font-size:12.5px;margin-top:10px;min-height:16px;}
+.signoutbtn{font-family:inherit;font-size:10px;text-transform:uppercase;letter-spacing:.5px;border:1px solid var(--line);background:transparent;color:var(--ink-soft);padding:4px 10px;border-radius:20px;cursor:pointer;margin-top:6px;}
 </style>
 </head>
 <body>
-<div class="wrap" id="app"></div>
+<div class="wrap authwrap" id="authgate" style="display:none;">
+  <div class="authbox">
+    <h2>Sign in to Restock</h2>
+    <p>Sign in so your changes sync across your devices. Use the same email &amp; password on your Mac and iPhone.</p>
+    <input type="email" id="authemail" placeholder="Email" autocomplete="email">
+    <input type="password" id="authpassword" placeholder="Password" autocomplete="current-password">
+    <div class="authbtns">
+      <button class="primarybtn" id="authsignin">Sign In</button>
+      <button class="secondarybtn" id="authsignup">Create Account</button>
+    </div>
+    <div class="autherr" id="autherr"></div>
+  </div>
+</div>
+<div class="wrap" id="app" style="display:none;"></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyCiHjIlaPxLSXQjlNZOA1DZWL06FYNBxA4",
+  authDomain: "evangeline-apps.firebaseapp.com",
+  projectId: "evangeline-apps",
+  storageBucket: "evangeline-apps.firebasestorage.app",
+  messagingSenderId: "528428196493",
+  appId: "1:528428196493:web:8617b410a856e67005b8c4"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
 const STORES = {
   walmart:{label:"Walmart", color:"var(--walmart)", bg:"var(--walmart-bg)"},
   sams:{label:"Sam's Club", color:"var(--sams)", bg:"var(--sams-bg)"},
@@ -150,14 +190,58 @@ const TABS = [
 
 let state = { tab:"inventory", status:{}, price:{}, notes:{}, links:{}, editingLink:{}, customItems:[], nameOverrides:{}, editMode:false, addingTo:null };
 
-function loadState(){
-  const keys = {"restock-status":"status","restock-price":"price","restock-notes":"notes","restock-links":"links","restock-custom-items":"customItems","restock-name-overrides":"nameOverrides"};
-  for(const k in keys){
-    try{ const raw = localStorage.getItem(k); if(raw) state[keys[k]] = JSON.parse(raw); }catch(e){}
-  }
+function docRef(uid){ return db.doc("users/"+uid+"/apps/restock"); }
+function applyCloudData(data){
+  state.status = (data && data.status) || {};
+  state.price = (data && data.price) || {};
+  state.notes = (data && data.notes) || {};
+  state.links = (data && data.links) || {};
+  state.customItems = (data && data.customItems) || [];
+  state.nameOverrides = (data && data.nameOverrides) || {};
+}
+function syncToCloud(){
+  const user = auth.currentUser;
+  if(!user) return;
+  docRef(user.uid).set({
+    status: state.status, price: state.price, notes: state.notes,
+    links: state.links, customItems: state.customItems, nameOverrides: state.nameOverrides
+  }, {merge:true}).catch(e=>console.error("sync failed", e));
+}
+let unsubscribeDoc = null;
+function showApp(){
+  document.getElementById("authgate").style.display = "none";
+  document.getElementById("app").style.display = "";
   render();
 }
-function saveState(key,val){ try{ localStorage.setItem(key, JSON.stringify(val)); }catch(e){} }
+function showAuthGate(){
+  document.getElementById("authgate").style.display = "";
+  document.getElementById("app").style.display = "none";
+}
+auth.onAuthStateChanged(user=>{
+  if(unsubscribeDoc){ unsubscribeDoc(); unsubscribeDoc = null; }
+  if(user){
+    unsubscribeDoc = docRef(user.uid).onSnapshot(snap=>{
+      applyCloudData(snap.data());
+      showApp();
+    }, err=>console.error(err));
+  } else {
+    showAuthGate();
+  }
+});
+function wireAuthGate(){
+  const errEl = document.getElementById("autherr");
+  const emailEl = document.getElementById("authemail");
+  const passEl = document.getElementById("authpassword");
+  document.getElementById("authsignin").onclick = ()=>{
+    errEl.textContent = "";
+    auth.signInWithEmailAndPassword(emailEl.value.trim(), passEl.value).catch(e=>{ errEl.textContent = e.message; });
+  };
+  document.getElementById("authsignup").onclick = ()=>{
+    errEl.textContent = "";
+    auth.createUserWithEmailAndPassword(emailEl.value.trim(), passEl.value).catch(e=>{ errEl.textContent = e.message; });
+  };
+}
+wireAuthGate();
 
 function allItems(){ return ITEMS.concat(state.customItems); }
 function itemsForCat(cat){ return allItems().filter(i=>i.cat===cat); }
@@ -167,7 +251,10 @@ function render(){
   app.innerHTML = `
     <header class="top">
       <h1>Restock</h1>
-      <div class="tag">household &amp; hygiene, tracked by store</div>
+      <div style="text-align:right;">
+        <div class="tag">household &amp; hygiene, tracked by store</div>
+        <button class="signoutbtn" id="signoutbtn">Sign Out</button>
+      </div>
     </header>
     <div id="tabcontent"></div>
     <nav class="bottombar">
@@ -175,6 +262,8 @@ function render(){
     </nav>
   `;
   app.querySelectorAll("nav.bottombar button").forEach(b=>{ b.onclick=()=>{ state.tab=b.dataset.tab; window.scrollTo(0,0); render(); }; });
+  const signoutBtn = app.querySelector("#signoutbtn");
+  if(signoutBtn) signoutBtn.onclick = ()=> auth.signOut();
   const c = document.getElementById("tabcontent");
   if(state.tab==="inventory") c.innerHTML = renderInventory();
   if(state.tab==="shopping") c.innerHTML = renderShopping();
@@ -309,22 +398,22 @@ function wireEvents(){
     group.querySelectorAll("button").forEach(btn=>{
       btn.onclick = ()=>{
         state.status[item] = btn.dataset.status;
-        saveState("restock-status", state.status);
+        syncToCloud();
         render();
       };
     });
   });
   c.querySelectorAll("[data-price]").forEach(inp=>{
-    inp.onchange = ()=>{ state.price[inp.dataset.price] = inp.value.trim(); saveState("restock-price", state.price); };
+    inp.onchange = ()=>{ state.price[inp.dataset.price] = inp.value.trim(); syncToCloud(); };
   });
   c.querySelectorAll("[data-note]").forEach(inp=>{
-    inp.onchange = ()=>{ state.notes[inp.dataset.note] = inp.value.trim(); saveState("restock-notes", state.notes); };
+    inp.onchange = ()=>{ state.notes[inp.dataset.note] = inp.value.trim(); syncToCloud(); };
   });
   c.querySelectorAll("[data-link]").forEach(inp=>{
     inp.onchange = ()=>{
       state.links[inp.dataset.link] = inp.value.trim();
       state.editingLink[inp.dataset.link] = false;
-      saveState("restock-links", state.links);
+      syncToCloud();
       render();
     };
   });
@@ -357,7 +446,7 @@ function wireEvents(){
       if(!name) return;
       const id = "custom-" + Date.now().toString(36) + Math.random().toString(36).slice(2,6);
       state.customItems.push({id, name, store: storeSelect.value, cat});
-      saveState("restock-custom-items", state.customItems);
+      syncToCloud();
       state.addingTo = null;
       render();
     };
@@ -367,7 +456,7 @@ function wireEvents(){
       const id = inp.dataset.rename;
       const val = inp.value.trim();
       if(val) state.nameOverrides[id] = val; else delete state.nameOverrides[id];
-      saveState("restock-name-overrides", state.nameOverrides);
+      syncToCloud();
       render();
     };
   });
@@ -377,18 +466,11 @@ function wireEvents(){
       state.customItems = state.customItems.filter(i=>i.id!==id);
       delete state.nameOverrides[id];
       delete state.status[id]; delete state.price[id]; delete state.notes[id]; delete state.links[id]; delete state.editingLink[id];
-      saveState("restock-custom-items", state.customItems);
-      saveState("restock-name-overrides", state.nameOverrides);
-      saveState("restock-status", state.status);
-      saveState("restock-price", state.price);
-      saveState("restock-notes", state.notes);
-      saveState("restock-links", state.links);
+      syncToCloud();
       render();
     };
   });
 }
-
-loadState();
 </script>
 </body>
 </html>
